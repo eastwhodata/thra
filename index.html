@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>High Risk Area Summary</title>
+    <link rel="icon" href="favicon.png" type="image/png">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* ── Background ── */
+        #loading {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+            overflow: hidden;
+
+            /* Animated gradient background */
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0f2847 70%, #162032 100%);
+            background-size: 400% 400%;
+            animation: bgShift 8s ease infinite;
+        }
+
+        @keyframes bgShift {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ── Floating particles ── */
+        .particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0;
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+            10%  { opacity: 0.35; }
+            90%  { opacity: 0.15; }
+            100% { transform: translateY(-20vh) scale(1.4); opacity: 0; }
+        }
+
+        /* ── Card ── */
+        .loader-card {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 28px;
+            padding: 48px 52px 44px;
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: 0 32px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04) inset;
+            animation: cardIn 0.7s cubic-bezier(0.16,1,0.3,1) both;
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(28px) scale(0.94); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ── Icon area ── */
+        .icon-wrap {
+            position: relative;
+            width: 96px;
+            height: 96px;
+        }
+
+        /* Glow rings */
+        .icon-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid rgba(239, 68, 68, 0.35);
+            animation: ringPulse 2.2s ease-out infinite;
+        }
+
+        .icon-ring:nth-child(2) {
+            border-color: rgba(239, 68, 68, 0.20);
+            animation-delay: 0.7s;
+        }
+
+        .icon-ring:nth-child(3) {
+            border-color: rgba(239, 68, 68, 0.10);
+            animation-delay: 1.4s;
+        }
+
+        @keyframes ringPulse {
+            0%   { transform: scale(0.9); opacity: 1; }
+            100% { transform: scale(1.7); opacity: 0; }
+        }
+
+        /* Icon circle */
+        .icon-circle {
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ef4444, #b91c1c);
+            box-shadow: 0 8px 28px rgba(239,68,68,0.45), 0 0 0 3px rgba(239,68,68,0.15);
+            display: grid;
+            place-items: center;
+            animation: iconBreathe 3s ease-in-out infinite;
+        }
+
+        @keyframes iconBreathe {
+            0%, 100% { transform: scale(1); box-shadow: 0 8px 28px rgba(239,68,68,0.45), 0 0 0 3px rgba(239,68,68,0.15); }
+            50%       { transform: scale(1.06); box-shadow: 0 12px 36px rgba(239,68,68,0.60), 0 0 0 5px rgba(239,68,68,0.18); }
+        }
+
+        .icon-circle svg {
+            width: 38px;
+            height: 38px;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+        }
+
+        /* ── Text ── */
+        .loader-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #f8fafc;
+            letter-spacing: -0.02em;
+            text-align: center;
+            line-height: 1.2;
+            animation: textFadeIn 0.8s 0.3s ease both;
+        }
+
+        .loader-sub {
+            font-size: 13.5px;
+            color: rgba(255,255,255,0.50);
+            text-align: center;
+            font-weight: 500;
+            margin-top: 5px;
+            animation: textFadeIn 0.8s 0.5s ease both;
+            letter-spacing: 0.01em;
+        }
+
+        @keyframes textFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Progress bar ── */
+        .progress-wrap {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            animation: textFadeIn 0.8s 0.6s ease both;
+        }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 5px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.10);
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #ef4444, #f97316, #ef4444);
+            background-size: 200% 100%;
+            animation: barSlide 1.8s ease-in-out infinite, barShimmer 2s linear infinite;
+            width: 60%;
+        }
+
+        @keyframes barSlide {
+            0%   { width: 15%; margin-left: 0%; }
+            50%  { width: 70%; margin-left: 20%; }
+            100% { width: 15%; margin-left: 85%; }
+        }
+
+        @keyframes barShimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .progress-label {
+            font-size: 11.5px;
+            color: rgba(255,255,255,0.38);
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            animation: dotBlink 1.4s steps(1) infinite;
+        }
+
+        @keyframes dotBlink {
+            0%, 100% { content: ''; }
+        }
+
+        /* Animated dots */
+        .dots::after {
+            content: '';
+            animation: dotCycle 1.4s steps(4) infinite;
+        }
+
+        @keyframes dotCycle {
+            0%   { content: ''; }
+            25%  { content: '.'; }
+            50%  { content: '..'; }
+            75%  { content: '...'; }
+            100% { content: ''; }
+        }
+
+        /* ── Bottom badge ── */
+        .loader-badge {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.10);
+            font-size: 11.5px;
+            color: rgba(255,255,255,0.45);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            margin-top: -8px;
+            animation: textFadeIn 0.8s 0.8s ease both;
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22c55e;
+            flex-shrink: 0;
+            animation: badgePulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50%       { transform: scale(1.5); opacity: 0.6; }
+        }
+
+        /* ── iframe ── */
+        iframe {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            border: none;
+            display: block;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading">
+
+    <!-- Floating particles -->
+    <div class="particles" id="particles"></div>
+
+    <div class="loader-card">
+
+        <!-- Icon with pulse rings -->
+        <div class="icon-wrap">
+            <div class="icon-ring"></div>
+            <div class="icon-ring"></div>
+            <div class="icon-ring"></div>
+            <div class="icon-circle">
+                <!-- HRA shield/map-pin icon -->
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="rgba(255,255,255,0.22)" stroke="white" stroke-width="1.5"/>
+                    <circle cx="12" cy="9" r="2.5" fill="white"/>
+                    <path d="M8.5 17.5 Q12 22 15.5 17.5" stroke="rgba(255,255,255,0.5)" stroke-width="1" fill="none" stroke-linecap="round"/>
+                    <path d="M7 14 Q12 19 17 14" stroke="rgba(255,255,255,0.3)" stroke-width="1" fill="none" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Title -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:100%">
+            <div class="loader-title">High Risk Area Summary-Transitioned</div>
+            <div class="loader-sub">Dashboard initialising, please wait…</div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="progress-wrap">
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill"></div>
+            </div>
+            <div class="progress-label">Loading data<span class="dots"></span></div>
+        </div>
+
+        <!-- Live badge -->
+        <div class="loader-badge">
+            <span class="badge-dot"></span>
+            Connecting to Database
+        </div>
+
+    </div>
+</div>
+
+<iframe
+    src="https://script.google.com/macros/s/AKfycbyxuvcH2XX4KANbazwlJ91FMhlt07arZs5PtZi9RGVi5Rh-RTcVtpqomv5bRbQp6p3YaQ/exec"
+    allow="geolocation"
+    allowfullscreen
+    title="High Risk Area Summary"
+    onload="document.getElementById('loading').style.display='none'">
+</iframe>
+
+<script>
+// Generate floating particles
+(function(){
+    const container = document.getElementById('particles');
+    const colors = ['rgba(239,68,68,', 'rgba(249,115,22,', 'rgba(59,130,246,', 'rgba(255,255,255,'];
+    for (let i = 0; i < 22; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const size = Math.random() * 6 + 3;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const opacity = Math.random() * 0.4 + 0.1;
+        p.style.cssText = `
+            width:${size}px;
+            height:${size}px;
+            left:${Math.random() * 100}%;
+            background:${color}${opacity});
+            animation-duration:${Math.random() * 10 + 8}s;
+            animation-delay:${Math.random() * 8}s;
+        `;
+        container.appendChild(p);
+    }
+})();
+</script>
+
+</body>
+</html>
+
